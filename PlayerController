@@ -1,17 +1,16 @@
-using TMPro;
-using Unity.VisualScripting;
-using UnityEditor.Tilemaps;
 using UnityEngine;
 
 [RequireComponent(typeof(Rigidbody2D))]
 [RequireComponent(typeof(Animator))]
 [RequireComponent(typeof(CapsuleCollider2D))]
-
-public class PlayerController : MonoBehaviour {
+public class PlayerController : MonoBehaviour
+{
+    // Singleton (acceso público de solo lectura)
+    public static PlayerController Instance { get; set; }
 
     [Header("Movement")]
-    [SerializeField] private float moveSpeed = 5.0f;
-    [SerializeField] [Range(0.5f, 0.9f)] private float isometricRatio = 0.707f;
+    [SerializeField] public float moveSpeed = 5.0f;
+    [SerializeField][Range(0.5f, 0.9f)] private float isometricRatio = 0.707f;
 
     [Header("Collision Settings")]
     [SerializeField] private LayerMask walkableLayer;
@@ -23,55 +22,83 @@ public class PlayerController : MonoBehaviour {
     private Vector2 movementInput;
     private Vector2 calculatedMovement;
     private bool isFacingRight = true;
+    private float baseSpeed;
+    private float currentSpeedModifier;
 
     private void Awake()
     {
         rb = GetComponent<Rigidbody2D>();
         anim = GetComponent<Animator>();
         capsuleCollider = GetComponent<CapsuleCollider2D>();
+        baseSpeed = moveSpeed;
 
-        //config de rb
+        // Configuración de Rigidbody
         rb.gravityScale = 0;
         rb.constraints = RigidbodyConstraints2D.FreezeRotation;
         rb.collisionDetectionMode = CollisionDetectionMode2D.Continuous;
+
+        // Configuración del Singleton
+        if (Instance == null)
+        {
+            Instance = this;
+            DontDestroyOnLoad(gameObject); // (Opcional si usas múltiples escenas)
+        }
+        else
+        {
+            Destroy(gameObject);
+        }
+    }
+
+    private void OnDestroy()
+    {
+        if (Instance != this)
+        {
+            Instance = null;
+        }
     }
 
     private void Update()
     {
+        // Captura de input
         movementInput = new Vector2(
             Input.GetAxisRaw("Horizontal"),
             Input.GetAxisRaw("Vertical")
-         );
+        );
 
-        //conversión isométrica
+        // Conversión isométrica
         calculatedMovement = new Vector2(
             (movementInput.x - movementInput.y) * isometricRatio,
             (movementInput.x + movementInput.y) * isometricRatio * 0.5f
         ).normalized;
 
+        if (moveSpeed <= 0.1f) moveSpeed = baseSpeed;
+
         UpdateAnimation();
     }
 
+
     private void FixedUpdate()
     {
-        if(movementInput.magnitude > 0.1f)
+        if (movementInput.magnitude > 0.1f)
         {
             TryMove(calculatedMovement);
         }
     }
-    
+
     private void TryMove(Vector2 direction)
     {
-        //verificate collision
+        // Verificación de colisión
         RaycastHit2D[] hits = new RaycastHit2D[1];
         int hitCount = capsuleCollider.Cast(
             direction,
             hits,
             moveSpeed * Time.fixedDeltaTime + collisionOffset
-            );
+        );
 
-        if( hitCount == 0 ) 
-        rb.MovePosition(rb.position +  direction * moveSpeed * Time.fixedDeltaTime);
+        if (hitCount == 0)
+        {
+            rb.MovePosition(rb.position + direction * moveSpeed * Time.fixedDeltaTime);
+        }
     }
 
     private void UpdateAnimation()
@@ -82,9 +109,7 @@ public class PlayerController : MonoBehaviour {
         if (movementInput.x != 0)
         {
             bool shouldFaceRight = movementInput.x > 0;
-
-            //Control de Flip
-            if ( shouldFaceRight != isFacingRight )
+            if (shouldFaceRight != isFacingRight)
             {
                 Flip();
             }
@@ -94,7 +119,6 @@ public class PlayerController : MonoBehaviour {
     private void Flip()
     {
         isFacingRight = !isFacingRight;
-
         Vector3 scale = transform.localScale;
         scale.x = Mathf.Abs(scale.x) * (isFacingRight ? 1 : -1);
         transform.localScale = scale;
@@ -102,7 +126,7 @@ public class PlayerController : MonoBehaviour {
 
     private void OnDrawGizmos()
     {
-        if(rb != null && movementInput.magnitude > 0.1f)
+        if (rb != null && movementInput.magnitude > 0.1f)
         {
             Gizmos.color = Color.yellow;
             Gizmos.DrawRay(transform.position, calculatedMovement * (moveSpeed * 0.1f + collisionOffset));
@@ -112,5 +136,17 @@ public class PlayerController : MonoBehaviour {
     private void OnCollisionEnter2D(Collision2D collision)
     {
         Debug.Log($"Colisionando con: {collision.gameObject.name}");
+    }
+
+    public void SetTemporarySpeed(float newSpeed)
+    {
+        moveSpeed = newSpeed;
+        currentSpeedModifier = newSpeed / baseSpeed;
+    }
+
+    public void resetSpeed()
+    {
+        moveSpeed = baseSpeed;
+        currentSpeedModifier = 1f;
     }
 }
