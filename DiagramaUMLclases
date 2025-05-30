@@ -1,0 +1,78 @@
+classDiagram
+    %% Módulo central
+    class GameManager {
+        +GameState currentState
+        +void ChangeState(GameState newState)
+        +void SaveGame()
+        +void LoadGame()
+    }
+
+    %% Sistema de jugador
+    class PlayerController {
+        +float moveSpeed
+        +void Move(Vector2 direction)
+        +void Interact()
+    }
+
+    class PlayerStats {
+        +int health
+        +int coins
+        +void AddCoin(int amount)
+        +void TakeDamage(int damage)
+    }
+
+    %% Sistemas de gameplay
+    class MoodSystem {
+        +MoodState currentMood
+        +void ChangeMood(MoodState newMood)
+        +void ApplyMoodEffects()
+    }
+
+    class PainSystem {
+        +float painLevel
+        +void IncreasePain()
+        +void TakePainkiller()
+    }
+
+    class TaskSystem {
+        +List~Task~ activeTasks
+        +void CompleteTask(Task task)
+        +void GenerateNewTask()
+    }
+
+    %% NPCs y diálogos
+    class NPCBase {
+        +string npcName
+        +MoodReaction currentReaction
+        +void ReactToPlayerMood()
+    }
+
+    class DialogueSystem {
+        +void StartDialogue(NPCBase npc)
+        +void ShowDialogueLine(string text)
+        +void EndDialogue()
+    }
+
+    %% Gestión de niveles
+    class FloorManager {
+        +int currentFloor
+        +void ChangeFloor(int floorNumber)
+        +void LoadFloorLayout()
+    }
+
+    %% Control de cámara
+    class CameraPlayer {
+        +Transform target
+        +void FollowPlayer()
+        +void ApplyMoodEffects(MoodState mood)
+    }
+
+    %% Relaciones clave
+    GameManager "1" *-- "1" PlayerStats : Maneja
+    GameManager "1" *-- "1" TaskSystem : Controla
+    PlayerController "1" --> "1" PlayerStats : Usa
+    MoodSystem "1" --> "1" CameraPlayer : Notifica
+    MoodSystem "1" --> "*" NPCBase : Afecta
+    NPCBase "1" --> "1" DialogueSystem : Inicia
+    FloorManager "1" --> "1" PlayerController : Actualiza posición
+    PainSystem "1" --> "1" PlayerStats : Modifica salud
