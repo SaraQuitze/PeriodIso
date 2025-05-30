@@ -1,0 +1,18 @@
+graph TD
+    A[Fase de Diseño] --> B[Prototipado Técnico]
+    B --> C[Pruebas con Usuarios]
+    C --> D{¿Cumple objetivos?}
+    D -->|Sí| E[Build Final]
+    D -->|No| F[Retroalimentación]
+    F --> G[Ajustes Clave]
+    G --> B
+
+    subgraph "Detalles por Fase (para iteraciones en Period)"
+    A -->|Diseño Narrativo| A1[Documento de historia con ramificaciones]
+    A -->|Diseño Técnico| A2[Diagramas UML de sistemas]
+    B -->|Mood System| B1[Implementación estados emocionales]
+    B -->|NPCs Reactivos| B2[Scripts de interacción]
+    C -->|Pruebas de Usabilidad| C1[Grupos focales: 20 jugadores]
+    C -->|Métricas Técnicas| C2[Unity Analytics: FPS, bugs]
+    end
+ 
