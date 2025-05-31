@@ -9,7 +9,7 @@ public class PlayerController : MonoBehaviour
     public static PlayerController Instance { get; set; }
 
     [Header("Movement")]
-    [SerializeField] public float moveSpeed = 5.0f;
+    [SerializeField] public float baseMoveSpeed = 5.0f;
     [SerializeField][Range(0.5f, 0.9f)] private float isometricRatio = 0.707f;
 
     [Header("Collision Settings")]
@@ -25,12 +25,28 @@ public class PlayerController : MonoBehaviour
     private float baseSpeed;
     private float currentSpeedModifier;
 
+    private float currentMoveSpeed;
+    public float moveSpeed
+    {
+        get => currentMoveSpeed;
+        set
+        {
+            currentMoveSpeed = Mathf.Clamp(value, baseMoveSpeed * 0.1f, baseMoveSpeed * 2f);
+            currentSpeedModifier = currentMoveSpeed / baseMoveSpeed;
+        }
+    }
+
+    public float GetBaseSpeed()
+    {
+        return baseMoveSpeed;
+    }
+
     private void Awake()
     {
         rb = GetComponent<Rigidbody2D>();
         anim = GetComponent<Animator>();
         capsuleCollider = GetComponent<CapsuleCollider2D>();
-        baseSpeed = moveSpeed;
+        currentMoveSpeed = baseMoveSpeed;
 
         // Configuración de Rigidbody
         rb.gravityScale = 0;
@@ -81,6 +97,12 @@ public class PlayerController : MonoBehaviour
     {
         if (movementInput.magnitude > 0.1f)
         {
+            // Añade esta verificación
+            if (moveSpeed <= 0.1f)
+            {
+                moveSpeed = baseMoveSpeed * 0.1f; // Mínimo 10% de velocidad
+            }
+
             TryMove(calculatedMovement);
         }
     }
@@ -140,13 +162,14 @@ public class PlayerController : MonoBehaviour
 
     public void SetTemporarySpeed(float newSpeed)
     {
-        moveSpeed = newSpeed;
-        currentSpeedModifier = newSpeed / baseSpeed;
+        moveSpeed = Mathf.Clamp(newSpeed, baseMoveSpeed * 0.1f, baseMoveSpeed * 2f);
+        currentSpeedModifier = moveSpeed / baseMoveSpeed;
     }
 
-    public void resetSpeed()
+    public void ResetSpeed()
     {
-        moveSpeed = baseSpeed;
+        moveSpeed = baseMoveSpeed;
         currentSpeedModifier = 1f;
+        if (rb != null) rb.linearVelocity = Vector2.zero;
     }
 }
