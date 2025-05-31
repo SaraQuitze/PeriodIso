@@ -1,4 +1,6 @@
+using System;
 using System.Collections;
+using System.Collections.Generic;
 using UnityEngine;
 
 public enum MoodState {Normal, Tired, Angry, Uncomfortable, Sad}
@@ -29,7 +31,7 @@ public class MoodSystem : MonoBehaviour
         originalScale = playerTransform.localScale;
         if (PlayerController.Instance != null)
         {
-            originalSpeed = PlayerController.Instance.moveSpeed;
+            originalSpeed = PlayerController.Instance.baseMoveSpeed;
         }
     }
     private void Start()
@@ -52,7 +54,7 @@ public class MoodSystem : MonoBehaviour
     {
         yield return new WaitForSeconds(initialDelay);
 
-        //secuencia cíclica
+        //secuencia c�clica
         while(true)
         {
             ChangeMood(MoodState.Tired);
@@ -110,14 +112,9 @@ public class MoodSystem : MonoBehaviour
     {
         if (PlayerController.Instance != null)
         {
-            // Guarda la velocidad original si no está guardada
-            /*if (originalSpeed <= 0)
-            {
-                originalSpeed = PlayerController.Instance.moveSpeed;
-            }*/
-            //reducir velocidad
-            PlayerController.Instance.SetTemporarySpeed(originalSpeed / 2f);
+            PlayerController.Instance.moveSpeed = PlayerController.Instance.baseMoveSpeed * 0.5f;
         }
+
         if (playerAnimation != null)
         {
             playerAnimation.Play("caminarTired");
@@ -129,15 +126,15 @@ public class MoodSystem : MonoBehaviour
         //efecto pantalla roja
         StartCoroutine(ApplyScreenEffect(Color.red, 0.8f));
 
-        // Obtener la cámara de forma segura
+        // Obtener la c�mara de forma segura
         if (CameraPlayer.Instance != null)
         {
-            //efecto shake de cámara
+            //efecto shake de c�mara
             CameraPlayer.Instance.TriggerShake(angryShakeIntensity, true);
         }
         else
         {
-            Debug.LogWarning("No se encontró CameraPlayer en la escena");
+            Debug.LogWarning("No se encontro CameraPlayer en la escena");
         }
 
 
@@ -153,7 +150,12 @@ public class MoodSystem : MonoBehaviour
         playerTransform.localScale = new Vector3(0.4f, 0.4f, 0.4f);
 
         //reducir velocidad
-        PlayerController.Instance.moveSpeed = originalSpeed/ 2f;
+        if (PlayerController.Instance != null)
+        {
+            //reducir velocidad
+            originalSpeed = PlayerController.Instance.GetBaseSpeed(); // Actualiza la velocidad base
+            PlayerController.Instance.SetTemporarySpeed(originalSpeed * 0.3f);
+        }
     }
 
     private void ApplySadEffect()
@@ -166,7 +168,7 @@ public class MoodSystem : MonoBehaviour
         //Efecto Gris
         yield return StartCoroutine(ApplyScreenEffect(Color.gray, 0.8f));
 
-        //Transición a negro y de vuelta
+        /*Transicion a negro y de vuelta
         float timer = 0f;
         while (timer < sadBlackoutDuration)
         {
@@ -176,10 +178,15 @@ public class MoodSystem : MonoBehaviour
 
             timer += Time.deltaTime;
             yield return null;
-        }
+        }*/
 
         //reducir velocidad
-        PlayerController.Instance.moveSpeed = originalSpeed * 0.4f;
+        if (PlayerController.Instance != null)
+        {
+            //reducir velocidad
+            originalSpeed = PlayerController.Instance.GetBaseSpeed(); // Actualiza la velocidad base
+            PlayerController.Instance.SetTemporarySpeed(originalSpeed * 0.5f);
+        }
     }
 
     private IEnumerator ApplyScreenEffect(Color targetColor, float intensity)
@@ -200,8 +207,15 @@ public class MoodSystem : MonoBehaviour
         //restaurar valores originales
         if (PlayerController.Instance != null)
         {
-            PlayerController.Instance.moveSpeed = originalSpeed;
-            PlayerController.Instance.GetComponent<Rigidbody2D>().linearVelocity = Vector2.zero;
+            originalSpeed = PlayerController.Instance.GetBaseSpeed(); // Actualiza antes de resetear
+            PlayerController.Instance.ResetSpeed();
+
+            // Fuerza la detenci�n del movimiento
+            var rb = PlayerController.Instance.GetComponent<Rigidbody2D>();
+            if (rb != null)
+            {
+                rb.linearVelocity = Vector2.zero;
+            }
         }
         if (playerTransform != null)
         {
