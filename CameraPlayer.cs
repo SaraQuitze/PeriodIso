@@ -1,11 +1,22 @@
 using System.Collections;
 using UnityEngine;
+#if UNITY_EDITOR
+using UnityEditor;
+#endif
+
 #if CINEMACHINE
-using Unity.Cinemachine;
+using Unity.Cinemachine; // Para Unity 6
 #endif
 
 public class CameraPlayer : MonoBehaviour
 {
+    [Header("Cinemachine settings")]
+#if CINEMACHINE
+    [SerializeField]
+    private CinemachineCamera virtualCam;
+    private CinemachineImpulseSource impulseSource;
+#endif
+
     public static CameraPlayer Instance { get; private set; } // Singleton
 
     [Header("Configuration")]
@@ -15,16 +26,9 @@ public class CameraPlayer : MonoBehaviour
     [SerializeField] private bool usingCinemachine;
     [SerializeField] private Transform target; //asignar layer manualmente desde el inspector
 
-#if CINEMACHINE
-    [Header("Cinemachine settings")]
-    [SerializeField] private CinemachineCamera virtualCam;
-    private CinemachineImpulseSource impulseSource;
-#endif
-
     private Vector3 originalPosition;
     private Coroutine shakeCoroutine;
     private bool isAngryState = false;
-    private bool useBounds;
 
     private void Awake()
     {
@@ -33,7 +37,7 @@ public class CameraPlayer : MonoBehaviour
             Instance = this;
             originalPosition = transform.localPosition;
 
-#if CINEMACHINE
+//#if CINEMACHINE
             // Mueve la inicialización de virtualCam aquí
             virtualCam = GetComponent<CinemachineCamera>();
             if (virtualCam == null)
@@ -47,7 +51,7 @@ public class CameraPlayer : MonoBehaviour
                     Debug.LogError("2. Tener el paquete Cinemachine instalado");
                 }
             }
-#endif
+//#endif
 
             InitializeCamera();
         }
@@ -60,7 +64,7 @@ public class CameraPlayer : MonoBehaviour
     private void InitializeCamera()
     {
 
-#if CINEMACHINE
+//#if CINEMACHINE
         impulseSource = GetComponent<CinemachineImpulseSource>();
 
         if (usingCinemachine)
@@ -75,7 +79,7 @@ public class CameraPlayer : MonoBehaviour
                 }
             }
         }
-#endif
+//#endif
     }
 
     private void VerifyCameraSetup()
@@ -88,7 +92,7 @@ public class CameraPlayer : MonoBehaviour
             return;
         }
 
-#if CINEMACHINE
+//#if CINEMACHINE
         if (usingCinemachine)
         {
             if (virtualCam == null)
@@ -100,7 +104,7 @@ public class CameraPlayer : MonoBehaviour
             // Forzar actualización de la cámara
             StartCoroutine(ForceCameraUpdate());
         }
-#endif
+//#endif
     }
 
     private IEnumerator ForceCameraUpdate()
@@ -181,7 +185,7 @@ public class CameraPlayer : MonoBehaviour
 
     private void TryAssignVirtualCamera()
     {
-#if CINEMACHINE
+//#if CINEMACHINE
         if (virtualCam == null)
         {
             virtualCam = GetComponent<CinemachineCamera>();
@@ -209,7 +213,7 @@ public class CameraPlayer : MonoBehaviour
         {
             Debug.LogError($"No se pudo configurar Cinemachine. Target: {target}, VirtualCam: {virtualCam}");
         }
-#endif
+//#endif
     }
 
     private void LateUpdate()
@@ -222,19 +226,10 @@ public class CameraPlayer : MonoBehaviour
         }
     }
 
-    public void SetCameraBounds(float minX, float maxX, float minY, float maxY)
-    {
-        minX = minX;
-        maxX = maxX;
-        minY = minY;
-        maxY = maxY;
-        useBounds = true;
-    }
-
 
     //sacudida de cámara
 
-#if CINEMACHINE
+//#if CINEMACHINE
     private void InitializeImpulseSource()
     {
         impulseSource = GetComponent<CinemachineImpulseSource>();
@@ -252,7 +247,7 @@ public class CameraPlayer : MonoBehaviour
             DecayTime = 0.3f
         };
     }
-#endif
+//#endif
 
     public void TriggerShake(float magnitude, bool isAngry = true)
     {
@@ -262,20 +257,21 @@ public class CameraPlayer : MonoBehaviour
             return;
         }
 
-#if CINEMACHINE
-        if (impulseSource != null)
+/*#if CINEMACHINE
+        if (impulseSource == null)
         {
-            impulseSource.GenerateImpulse(magnitude);
+            impulseSource = gameObject.AddComponent<CinemachineImpulseSource>();
         }
-        else
-#endif
-        {
-            // Fallback a shake manual
-            if (shakeCoroutine != null)
-                StopCoroutine(shakeCoroutine);
 
-            shakeCoroutine = StartCoroutine(manualShake(0.5f, magnitude));
-        }
+        // Configuración dinámica
+        impulseSource.ImpulseDefinition.AmplitudeGain = magnitude;
+        impulseSource.ImpulseDefinition.FrequencyGain = magnitude;
+        impulseSource.GenerateImpulse();
+#else*/
+    // Shake manual alternativo
+    if (shakeCoroutine != null) StopCoroutine(shakeCoroutine);
+    shakeCoroutine = StartCoroutine(manualShake(0.5f, magnitude));
+//#endif
     }
 
     public IEnumerator manualShake(float duration, float magnitude)
